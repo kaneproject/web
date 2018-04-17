@@ -15,15 +15,20 @@ pipeline {
         }
         stage('sonar') {
           steps {
-            echo 'Ejecutando Sonar'
-            sh 'mvn sonar:sonar'
+            withSonarQubeEnv('sonar-local'){
+               sh 'mvn clean package sonar:sonar'
+            }
           }
         }
       }
     }
     stage('validate') {
       steps {
-        waitForQualityGate true
+        //waitForQualityGate true
+        def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+        if (qg.status != 'OK') {
+          error "Pipeline aborted due to quality gate failure: ${qg.status}"
+        }
       }
     }
     stage('install') {
